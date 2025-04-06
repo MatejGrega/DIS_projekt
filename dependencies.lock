@@ -76,7 +76,8 @@ direct_dependencies:
 - espressif/esp_lcd_gc9a01
 - espressif/esp_lcd_ili9341
 - espressif/esp_lcd_touch_stmpe610
+- idf
 - lvgl/lvgl
-manifest_hash: 520f96b005372e305742d9e0c73c405c4e696dfcb6016fa81a0bc119a88bb573
+manifest_hash: 0f6d9404d529552355d4dd148b340adc48b1e0d8f20b8a233bd6fab888c1b110
 target: esp32s2
 version: 2.0.0

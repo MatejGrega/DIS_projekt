@@ -12,6 +12,7 @@
     },
     "idf.flashType": "UART",
     "files.associations": {
-        "esp_lcd_ili9341.h": "c"
+        "esp_lcd_ili9341.h": "c",
+        "hw_init.h": "c"
     }
 }
