@@ -1,0 +1,17 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.espIdfPathWin": "C:\\Users\\grega\\esp\\v5.4\\esp-idf",
+    "idf.pythonInstallPath": "C:\\Users\\grega\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
+    "idf.openOcdConfigs": [
+        "board/esp32s2-kaluga-1.cfg"
+    ],
+    "idf.toolsPathWin": "C:\\Users\\grega\\.espressif",
+    "idf.portWin": "COM6",
+    "idf.customExtraVars": {
+        "IDF_TARGET": "esp32s2"
+    },
+    "idf.flashType": "UART",
+    "files.associations": {
+        "esp_lcd_ili9341.h": "c"
+    }
+}
