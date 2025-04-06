@@ -23,14 +23,31 @@
 
 #include "led_strip.h"
 
+#include "driver/adc.h"
+#include "esp_adc/adc_oneshot.h"
+
 // The pixel number in horizontal and vertical
 #define LCD_H_RES              320
 #define LCD_V_RES              240
+
+//button states on dev kit
+typedef enum{
+    BUTTON_NONE,
+    BUTTON_K1,
+    BUTTON_K2,
+    BUTTON_K3,
+    BUTTON_K4,
+    BUTTON_K5,
+    BUTTON_K6,
+} button_adc_t;
 
 void hw_init_lcd(lv_display_t *display);
 lv_obj_t* hw_init_get_canvas(void);
 lv_color_t* hw_init_get_canvas_buffer(void);
 
 void hw_init_LED_RGB(led_strip_handle_t *led_strip_p);
+
+void hw_init_buttons(void);
+button_adc_t hw_get_buttons(void);
 
 #endif

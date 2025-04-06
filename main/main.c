@@ -38,12 +38,6 @@ static _lock_t lvgl_api_lock;
 
 static led_strip_handle_t led_strip;
 
-
-
-
-
-
-
 //LVGL task
 static void lvgl_port_task(void *arg){
     ESP_LOGI(TAG, "Starting LVGL task");
@@ -63,6 +57,7 @@ void app_main(void)
 {
     hw_init_lcd(display);
     hw_init_LED_RGB(&led_strip);
+    hw_init_buttons();
 
     ESP_LOGI(TAG, "Create LVGL task");
     xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
@@ -72,11 +67,21 @@ void app_main(void)
     led_strip_refresh(led_strip);
 
 
+
+
+
+
+    
+
+
+
+
     uint32_t i = 0;
     while(1){
         _lock_acquire(&lvgl_api_lock);
         display_graphics(display, i++);
         _lock_release(&lvgl_api_lock);
+
         sleep(1);
     }
 }

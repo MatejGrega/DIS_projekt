@@ -66,13 +66,6 @@ static void increase_lvgl_tick(void *arg){
 }
 
 void hw_init_lcd(lv_display_t *display){
-    ESP_LOGI(TAG, "Turn off LCD backlight");
-    gpio_config_t bk_gpio_config = {
-        .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = 1ULL << PIN_NUM_LCD_BK_LIGHT
-    };
-    ESP_ERROR_CHECK(gpio_config(&bk_gpio_config));
-
     ESP_LOGI(TAG, "Initialize SPI bus");
     spi_bus_config_t buscfg = {
         .sclk_io_num = PIN_NUM_LCD_SCLK,
@@ -113,9 +106,6 @@ void hw_init_lcd(lv_display_t *display){
 
     // user can flush pre-defined pattern to the screen before we turn on the screen or backlight
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
-
-    ESP_LOGI(TAG, "Turn on LCD backlight");
-    gpio_set_level(PIN_NUM_LCD_BK_LIGHT, LCD_BK_LIGHT_ON_LEVEL);
 
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
@@ -198,4 +188,98 @@ void hw_init_LED_RGB(led_strip_handle_t *led_strip_p){
 
     /* Set all LED off to clear all pixels */
     led_strip_clear(*led_strip_p);
+}
+
+
+//====================================================================================================
+//  ADC for buttons
+//====================================================================================================
+
+#define ADC_CHANNEL             ADC_CHANNEL_5   // GPIO6 → ADC1_CHANNEL_5
+#define ADC_UNIT                ADC_UNIT_1
+
+#define ADC_TASK_STACK_SIZE     1024
+#define ADC_TASK_PRIORITY       0
+#define ADC_MEASURING_PERIOD_MS 5
+#define STABLE_MEAS_THRESHOLD   4   //number of stable subsequent measurements to consider valid button press
+
+adc_oneshot_unit_handle_t adc_handle;
+button_adc_t buttons_state = BUTTON_NONE;
+
+static void adc_buttons_task(void *args){
+    button_adc_t button_states_FIFO[STABLE_MEAS_THRESHOLD];
+
+    for(uint8_t i = 0; i < STABLE_MEAS_THRESHOLD; i++){     //initialization of FIFO buffer
+        button_states_FIFO[i] = BUTTON_NONE;
+    }
+
+    while(1){
+        int adc_raw;
+
+        //shift buffer with previou states
+        for(uint8_t i = STABLE_MEAS_THRESHOLD - 1; i > 0; i--){
+            button_states_FIFO[i] = button_states_FIFO[i - 1];
+        }
+        
+        adc_oneshot_read(adc_handle, ADC_CHANNEL, &adc_raw);
+
+        if(adc_raw > 7771){
+            button_states_FIFO[0] = BUTTON_NONE;
+        }
+        else if(adc_raw > 6675){
+            button_states_FIFO[0] = BUTTON_K1;
+        }
+        else if(adc_raw > 5440){
+            button_states_FIFO[0] = BUTTON_K2;
+        }
+        else if(adc_raw > 4115){
+            button_states_FIFO[0] = BUTTON_K3;
+        }
+        else if(adc_raw > 2900){
+            button_states_FIFO[0] = BUTTON_K4;
+        }
+        else if(adc_raw > 1790){
+            button_states_FIFO[0] = BUTTON_K5;
+        }
+        else if(adc_raw > 0){
+            button_states_FIFO[0] = BUTTON_K6;
+        }
+        else{
+            button_states_FIFO[0] = BUTTON_NONE;
+        }
+
+        //check whether all values are the same
+        bool valid_state = true;
+        for(uint8_t i = 1; i < STABLE_MEAS_THRESHOLD; i++){
+            if(button_states_FIFO[0] != button_states_FIFO[i]){
+                valid_state = false;
+                break;
+            }
+        }
+        if(valid_state == true){
+            buttons_state = button_states_FIFO[0];  //actualize button states
+        }
+
+        vTaskDelay(ADC_MEASURING_PERIOD_MS / portTICK_PERIOD_MS);
+    }
+}
+
+void hw_init_buttons(void){
+    adc_oneshot_unit_init_cfg_t init_cfg = {
+        .unit_id = ADC_UNIT,
+    };
+    adc_oneshot_new_unit(&init_cfg, &adc_handle);
+
+    // 2. Konfigurácia kanála
+    adc_oneshot_chan_cfg_t chan_cfg = {
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTEN_DB_11  // max rozsah do ~3.3V
+    };
+    adc_oneshot_config_channel(adc_handle, ADC_CHANNEL, &chan_cfg);
+
+    xTaskCreate(adc_buttons_task, "buttons", ADC_TASK_STACK_SIZE, NULL, ADC_TASK_PRIORITY, NULL);
+}
+
+button_adc_t hw_get_buttons(void){
+    return buttons_state;
 }
