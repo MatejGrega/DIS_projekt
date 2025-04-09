@@ -33,7 +33,7 @@ void display_graphics(lv_display_t *disp, uint32_t number)
     }*/
 
     lv_obj_t *canvas = hw_init_get_canvas();
-    lv_canvas_fill_bg(canvas, lv_color_make(0, 0, number%5*20), LV_OPA_100);
+    lv_canvas_fill_bg(canvas, lv_color_make(0, number%5*20, 0), LV_OPA_100);
 
     lv_layer_t layer;
     lv_canvas_init_layer(canvas, &layer);

@@ -82,6 +82,6 @@ void app_main(void)
         display_graphics(display, i++);
         _lock_release(&lvgl_api_lock);
 
-        sleep(1);
+        usleep(250 * 1000);
     }
 }
