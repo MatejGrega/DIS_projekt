@@ -26,6 +26,13 @@
 #include "driver/adc.h"
 #include "esp_adc/adc_oneshot.h"
 
+#include <string.h>
+#include "sdkconfig.h"
+#include "driver/i2s_std.h"
+#include "esp_system.h"
+#include "esp_check.h"
+#include "es8311.h"
+
 // The pixel number in horizontal and vertical
 #define LCD_H_RES              320
 #define LCD_V_RES              240
@@ -50,43 +57,8 @@ void hw_init_LED_RGB(led_strip_handle_t *led_strip_p);
 void hw_init_buttons(void);
 button_adc_t hw_get_buttons(void);
 
+esp_err_t es8311_codec_init(void);
+esp_err_t i2s_driver_init(i2s_chan_handle_t *tx_handle, i2s_chan_handle_t *rx_handle);
 
-
-
-
-
-
-
-
-
-
-
-#include "es8311.h"
-
-//define as 0 for echo mode
-#define MODE_MUSIC (0)
-
-/* Example configurations */
-#define EXAMPLE_RECV_BUF_SIZE   (2400)
-#define EXAMPLE_SAMPLE_RATE     (16000)
-#define EXAMPLE_MCLK_MULTIPLE   (384) // If not using 24-bit data width, 256 should be enough
-#define EXAMPLE_MCLK_FREQ_HZ    (EXAMPLE_SAMPLE_RATE * EXAMPLE_MCLK_MULTIPLE)
-#define EXAMPLE_VOICE_VOLUME    70 // range: 0-100
-#define EXAMPLE_MIC_GAIN        (ES8311_MIC_GAIN_36DB)
-
-/* I2C port and GPIOs */
-#define I2C_NUM         (0)
-#define I2C_SCL_IO      (GPIO_NUM_7)
-#define I2C_SDA_IO      (GPIO_NUM_8)
-
-/* I2S port and GPIOs */
-#define I2S_NUM         (0)
-
-#define I2S_MCK_IO      (GPIO_NUM_35)
-#define I2S_BCK_IO      (GPIO_NUM_18)
-#define I2S_WS_IO       (GPIO_NUM_17)
-
-#define I2S_DO_IO       (GPIO_NUM_12)
-#define I2S_DI_IO       (GPIO_NUM_34)
 
 #endif
