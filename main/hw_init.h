@@ -57,8 +57,7 @@ void hw_init_LED_RGB(led_strip_handle_t *led_strip_p);
 void hw_init_buttons(void);
 button_adc_t hw_get_buttons(void);
 
-esp_err_t es8311_codec_init(void);
-esp_err_t i2s_driver_init(i2s_chan_handle_t *tx_handle, i2s_chan_handle_t *rx_handle);
+void hw_init_audio(i2s_chan_handle_t *tx_handle, i2s_chan_handle_t *rx_handle);
 
 
 #endif

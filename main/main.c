@@ -26,42 +26,10 @@
 #include "lvgl_graphics.h"
 
 
-
-#define AU_PA_CTRL_PIN_NUM  GPIO_NUM_10  // change this to the GPIO you want to use
 // buffer size for recording and playing audio
 #define REC_PLAY_I2S_BUFF_SIZE   (2400)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// LCD related definitions
 #define LVGL_TASK_MAX_DELAY_MS 500
 #define LVGL_TASK_STACK_SIZE   (4 * 1024)
 #define LVGL_TASK_PRIORITY     2
@@ -89,32 +57,6 @@ static void lvgl_port_task(void *arg){
         usleep(1000 * time_till_next_ms);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 static const char err_reason[][30] = {"input param is invalid",
@@ -175,77 +117,13 @@ static void i2s_echo(void *args)
                 ESP_LOGI(TAG, "%d", mic_data[i]);
             }
         }
-        //usleep(5 * 1000 * 1000);
     }
     vTaskDelete(NULL);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void app_main(void)
 {
-    // Configure the PA GPIO
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << AU_PA_CTRL_PIN_NUM),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE
-    };
-    gpio_config(&io_conf);
-
-    // Set the GPIO high
-    gpio_set_level(AU_PA_CTRL_PIN_NUM, 1);
-
-
-
-    printf("i2s es8311 codec example start\n-----------------------------\n");
-    /* Initialize i2s peripheral */
-    if (i2s_driver_init(&tx_handle, &rx_handle) != ESP_OK) {
-        ESP_LOGE(TAG, "i2s driver init failed");
-        abort();
-    } else {
-        ESP_LOGI(TAG, "i2s driver init success");
-    }
-    /* Initialize i2c peripheral and config es8311 codec by i2c */
-    if (es8311_codec_init() != ESP_OK) {
-        ESP_LOGE(TAG, "es8311 codec init failed");
-        abort();
-    } else {
-        ESP_LOGI(TAG, "es8311 codec init success");
-    }
-    xTaskCreate(i2s_echo, "i2s_echo", 8192, NULL, 5, NULL);
-
-
-
-
-
-
-
-
-
-
+    hw_init_audio(&tx_handle, &rx_handle);
     hw_init_lcd(display);
     hw_init_LED_RGB(&led_strip);
     hw_init_buttons();
@@ -253,19 +131,11 @@ void app_main(void)
     ESP_LOGI(TAG, "Create LVGL task");
     xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
 
+    xTaskCreate(i2s_echo, "i2s_echo", 8192, NULL, 5, NULL);
+
 
     led_strip_set_pixel(led_strip, 0, 16, 1, 16);
     led_strip_refresh(led_strip);
-
-
-
-
-
-
-    
-
-
-
 
     uint32_t i = 0;
     while(1){
