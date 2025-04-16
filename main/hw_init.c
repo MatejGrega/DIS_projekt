@@ -205,7 +205,7 @@ void hw_init_LED_RGB(led_strip_handle_t *led_strip_p){
 adc_oneshot_unit_handle_t adc_handle;
 button_adc_t buttons_state = BUTTON_NONE;
 
-static void adc_buttons_task(void *args){
+static void __adc_buttons_task(void *args){
     button_adc_t button_states_FIFO[STABLE_MEAS_THRESHOLD];
 
     for(uint8_t i = 0; i < STABLE_MEAS_THRESHOLD; i++){     //initialization of FIFO buffer
@@ -261,6 +261,7 @@ static void adc_buttons_task(void *args){
 
         vTaskDelay(ADC_MEASURING_PERIOD_MS / portTICK_PERIOD_MS);
     }
+    vTaskDelete(NULL);
 }
 
 void hw_init_buttons(void){
@@ -276,7 +277,7 @@ void hw_init_buttons(void){
     };
     adc_oneshot_config_channel(adc_handle, ADC_CHANNEL, &chan_cfg);
 
-    xTaskCreate(adc_buttons_task, "buttons", ADC_TASK_STACK_SIZE, NULL, ADC_TASK_PRIORITY, NULL);
+    xTaskCreate(__adc_buttons_task, "buttons", ADC_TASK_STACK_SIZE, NULL, ADC_TASK_PRIORITY, NULL);
 }
 
 button_adc_t hw_get_buttons(void){
@@ -288,7 +289,6 @@ button_adc_t hw_get_buttons(void){
 //  Audio codec
 //====================================================================================================
 
-#define AUDIO_SAMPLE_RATE     (16000)
 #define AUDIO_MCLK_MULTIPLE   (384) // If not using 24-bit data width, 256 should be enough
 #define AUDIO_MCLK_FREQ_HZ    (AUDIO_SAMPLE_RATE * AUDIO_MCLK_MULTIPLE)
 #define AUDIO_VOICE_VOLUME    70 // range: 0-100

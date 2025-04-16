@@ -13,6 +13,11 @@
     "idf.flashType": "UART",
     "files.associations": {
         "esp_lcd_ili9341.h": "c",
-        "hw_init.h": "c"
+        "hw_init.h": "c",
+        "uart_struct.h": "c",
+        "unistd.h": "c",
+        "types.h": "c",
+        "stdint.h": "c",
+        "stdbool.h": "c"
     }
 }

@@ -37,6 +37,9 @@
 #define LCD_H_RES              320
 #define LCD_V_RES              240
 
+//Audio related definitions
+#define AUDIO_SAMPLE_RATE     (16000)   //codec sampling frequency
+
 //button states on dev kit
 typedef enum{
     BUTTON_NONE,

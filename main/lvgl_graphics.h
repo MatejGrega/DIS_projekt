@@ -7,7 +7,14 @@
 
 #include "lvgl.h"
 #include "hw_init.h"
+#include "common.h"
 
-void display_graphics(lv_display_t *disp, uint32_t number);
+#define VOLUME_MAX 100
+
+void ui_init(void);
+
+void display_graphics(lv_display_t *disp);
+
+
 
 #endif
