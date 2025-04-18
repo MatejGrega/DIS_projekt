@@ -63,6 +63,8 @@ static void swap_color_bytes(void){
 
 #define COLOR_MENU_INACTIVE 0,0,10
 #define COLOR_MENU_ACTIVE 255,180,0
+#define COLOR_MENU_LINES 255, 255, 0
+#define COLOR_MENU_ARROWS COLOR_WHITE
 
 #define MENU_LEFT_LINE_H_PX 260
 
@@ -78,6 +80,13 @@ static void swap_color_bytes(void){
 #define MENU_4TH_TEXT_V_PX (MENU_3RD_LINE_V_PX + LCD_V_RES / 12 - 6)
 #define MENU_5TH_TEXT_V_PX (MENU_4TH_LINE_V_PX + LCD_V_RES / 12 - 6)
 #define MENU_6TH_TEXT_V_PX (MENU_5TH_LINE_V_PX + LCD_V_RES / 12 - 6)
+
+#define ARROW_HEIGHT_PX 25
+#define ARROW_WIDTH_PX 7
+#define ARROW_LINE_WIDTH_PX 2
+#define ARROW_SIDES_WIDTH_PX 35
+#define ARROW_SIDES_HEAD_LENGTH 10
+#define ARROW_SIDES_HEAD_WIDTH 7
 
 void display_graphics(lv_display_t *disp)
 {
@@ -111,7 +120,7 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_left_dsc;
     lv_draw_line_dsc_init(&line_menu_left_dsc);
-    line_menu_left_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_left_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_left_dsc.width = 2;
     line_menu_left_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_left_dsc.p1.y = 0;
@@ -121,7 +130,7 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_1st_dsc;
     lv_draw_line_dsc_init(&line_menu_1st_dsc);
-    line_menu_1st_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_1st_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_1st_dsc.width = 2;
     line_menu_1st_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_1st_dsc.p1.y = MENU_1ST_LINE_V_PX;
@@ -131,7 +140,7 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_2nd_dsc;
     lv_draw_line_dsc_init(&line_menu_2nd_dsc);
-    line_menu_2nd_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_2nd_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_2nd_dsc.width = 2;
     line_menu_2nd_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_2nd_dsc.p1.y = MENU_2ND_LINE_V_PX;
@@ -141,7 +150,7 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_3rd_dsc;
     lv_draw_line_dsc_init(&line_menu_3rd_dsc);
-    line_menu_3rd_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_3rd_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_3rd_dsc.width = 2;
     line_menu_3rd_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_3rd_dsc.p1.y = MENU_3RD_LINE_V_PX;
@@ -151,7 +160,7 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_4th_dsc;
     lv_draw_line_dsc_init(&line_menu_4th_dsc);
-    line_menu_4th_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_4th_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_4th_dsc.width = 2;
     line_menu_4th_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_4th_dsc.p1.y = MENU_4TH_LINE_V_PX;
@@ -161,13 +170,128 @@ void display_graphics(lv_display_t *disp)
 
     lv_draw_line_dsc_t line_menu_5th_dsc;
     lv_draw_line_dsc_init(&line_menu_5th_dsc);
-    line_menu_5th_dsc.color = lv_color_make(255, 255, 0);
+    line_menu_5th_dsc.color = lv_color_make(COLOR_MENU_LINES);
     line_menu_5th_dsc.width = 2;
     line_menu_5th_dsc.p1.x = MENU_LEFT_LINE_H_PX;
     line_menu_5th_dsc.p1.y = MENU_5TH_LINE_V_PX;
     line_menu_5th_dsc.p2.x = LCD_H_RES;
     line_menu_5th_dsc.p2.y = MENU_5TH_LINE_V_PX;
     lv_draw_line(&layer, &line_menu_5th_dsc);
+
+    // - - - - - - - - - - - MENU -> arrows (lines)
+
+    //arrow right-left
+    lv_draw_line_dsc_t line_menu_arrw_sides_1_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_sides_1_dsc);
+    line_menu_arrw_sides_1_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_sides_1_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_sides_1_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX - ARROW_SIDES_WIDTH_PX) / 2;
+    line_menu_arrw_sides_1_dsc.p1.y = MENU_1ST_LINE_V_PX / 2;
+    line_menu_arrw_sides_1_dsc.p2.x = line_menu_arrw_sides_1_dsc.p1.x + ARROW_SIDES_WIDTH_PX;
+    line_menu_arrw_sides_1_dsc.p2.y = line_menu_arrw_sides_1_dsc.p1.y;
+    lv_draw_line(&layer, &line_menu_arrw_sides_1_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_sides_2_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_sides_2_dsc);
+    line_menu_arrw_sides_2_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_sides_2_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_sides_2_dsc.p1.x = line_menu_arrw_sides_1_dsc.p1.x;
+    line_menu_arrw_sides_2_dsc.p1.y = line_menu_arrw_sides_1_dsc.p1.y;
+    line_menu_arrw_sides_2_dsc.p2.x = line_menu_arrw_sides_2_dsc.p1.x + ARROW_SIDES_HEAD_LENGTH;
+    line_menu_arrw_sides_2_dsc.p2.y = line_menu_arrw_sides_2_dsc.p1.y - ARROW_SIDES_HEAD_WIDTH;
+    lv_draw_line(&layer, &line_menu_arrw_sides_2_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_sides_3_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_sides_3_dsc);
+    line_menu_arrw_sides_3_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_sides_3_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_sides_3_dsc.p1.x = line_menu_arrw_sides_1_dsc.p1.x;
+    line_menu_arrw_sides_3_dsc.p1.y = line_menu_arrw_sides_1_dsc.p1.y;
+    line_menu_arrw_sides_3_dsc.p2.x = line_menu_arrw_sides_3_dsc.p1.x + ARROW_SIDES_HEAD_LENGTH;
+    line_menu_arrw_sides_3_dsc.p2.y = line_menu_arrw_sides_3_dsc.p1.y + ARROW_SIDES_HEAD_WIDTH;
+    lv_draw_line(&layer, &line_menu_arrw_sides_3_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_sides_4_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_sides_4_dsc);
+    line_menu_arrw_sides_4_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_sides_4_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_sides_4_dsc.p1.x = line_menu_arrw_sides_1_dsc.p2.x;
+    line_menu_arrw_sides_4_dsc.p1.y = line_menu_arrw_sides_1_dsc.p1.y;
+    line_menu_arrw_sides_4_dsc.p2.x = line_menu_arrw_sides_4_dsc.p1.x - ARROW_SIDES_HEAD_LENGTH;
+    line_menu_arrw_sides_4_dsc.p2.y = line_menu_arrw_sides_4_dsc.p1.y + ARROW_SIDES_HEAD_WIDTH;
+    lv_draw_line(&layer, &line_menu_arrw_sides_4_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_sides_5_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_sides_5_dsc);
+    line_menu_arrw_sides_5_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_sides_5_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_sides_5_dsc.p1.x = line_menu_arrw_sides_1_dsc.p2.x;
+    line_menu_arrw_sides_5_dsc.p1.y = line_menu_arrw_sides_1_dsc.p1.y;
+    line_menu_arrw_sides_5_dsc.p2.x = line_menu_arrw_sides_5_dsc.p1.x - ARROW_SIDES_HEAD_LENGTH;
+    line_menu_arrw_sides_5_dsc.p2.y = line_menu_arrw_sides_5_dsc.p1.y - ARROW_SIDES_HEAD_WIDTH;
+    lv_draw_line(&layer, &line_menu_arrw_sides_5_dsc);
+
+    //arrow up
+    lv_draw_line_dsc_t line_menu_arrw_up_1_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_up_1_dsc);
+    line_menu_arrw_up_1_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_up_1_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_up_1_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_up_1_dsc.p1.y = MENU_1ST_LINE_V_PX + (MENU_2ND_LINE_V_PX - MENU_1ST_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_up_1_dsc.p2.x = line_menu_arrw_up_1_dsc.p1.x;
+    line_menu_arrw_up_1_dsc.p2.y = line_menu_arrw_up_1_dsc.p1.y + ARROW_HEIGHT_PX;
+    lv_draw_line(&layer, &line_menu_arrw_up_1_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_up_2_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_up_2_dsc);
+    line_menu_arrw_up_2_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_up_2_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_up_2_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_up_2_dsc.p1.y = MENU_1ST_LINE_V_PX + (MENU_2ND_LINE_V_PX - MENU_1ST_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_up_2_dsc.p2.x = line_menu_arrw_up_2_dsc.p1.x + ARROW_WIDTH_PX;
+    line_menu_arrw_up_2_dsc.p2.y = line_menu_arrw_up_2_dsc.p1.y + ARROW_HEIGHT_PX / 2;
+    lv_draw_line(&layer, &line_menu_arrw_up_2_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_up_3_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_up_3_dsc);
+    line_menu_arrw_up_3_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_up_3_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_up_3_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_up_3_dsc.p1.y = MENU_1ST_LINE_V_PX + (MENU_2ND_LINE_V_PX - MENU_1ST_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_up_3_dsc.p2.x = line_menu_arrw_up_3_dsc.p1.x - ARROW_WIDTH_PX;
+    line_menu_arrw_up_3_dsc.p2.y = line_menu_arrw_up_3_dsc.p1.y + ARROW_HEIGHT_PX / 2;
+    lv_draw_line(&layer, &line_menu_arrw_up_3_dsc);
+
+    //arrow down
+    lv_draw_line_dsc_t line_menu_arrw_down_1_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_down_1_dsc);
+    line_menu_arrw_down_1_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_down_1_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_down_1_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_down_1_dsc.p1.y = MENU_2ND_LINE_V_PX + (MENU_3RD_LINE_V_PX - MENU_2ND_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_down_1_dsc.p2.x = line_menu_arrw_down_1_dsc.p1.x;
+    line_menu_arrw_down_1_dsc.p2.y = line_menu_arrw_down_1_dsc.p1.y + ARROW_HEIGHT_PX;
+    lv_draw_line(&layer, &line_menu_arrw_down_1_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_down_2_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_down_2_dsc);
+    line_menu_arrw_down_2_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_down_2_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_down_2_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_down_2_dsc.p1.y = MENU_3RD_LINE_V_PX - (MENU_3RD_LINE_V_PX - MENU_2ND_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_down_2_dsc.p2.x = line_menu_arrw_down_2_dsc.p1.x + ARROW_WIDTH_PX;
+    line_menu_arrw_down_2_dsc.p2.y = line_menu_arrw_down_2_dsc.p1.y - ARROW_HEIGHT_PX / 2;
+    lv_draw_line(&layer, &line_menu_arrw_down_2_dsc);
+
+    lv_draw_line_dsc_t line_menu_arrw_down_3_dsc;
+    lv_draw_line_dsc_init(&line_menu_arrw_down_3_dsc);
+    line_menu_arrw_down_3_dsc.color = lv_color_make(COLOR_MENU_ARROWS);
+    line_menu_arrw_down_3_dsc.width = ARROW_LINE_WIDTH_PX;
+    line_menu_arrw_down_3_dsc.p1.x = MENU_LEFT_LINE_H_PX + (LCD_H_RES - MENU_LEFT_LINE_H_PX) / 2;
+    line_menu_arrw_down_3_dsc.p1.y = MENU_3RD_LINE_V_PX - (MENU_3RD_LINE_V_PX - MENU_2ND_LINE_V_PX - ARROW_HEIGHT_PX) / 2;
+    line_menu_arrw_down_3_dsc.p2.x = line_menu_arrw_down_3_dsc.p1.x - ARROW_WIDTH_PX;
+    line_menu_arrw_down_3_dsc.p2.y = line_menu_arrw_down_2_dsc.p1.y - ARROW_HEIGHT_PX / 2;
+    lv_draw_line(&layer, &line_menu_arrw_down_3_dsc);
 
     // - - - - - - - - - - - MENU -> labels (texts)
 
