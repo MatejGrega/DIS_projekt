@@ -262,13 +262,14 @@ static void i2s_echo(void *args)
         uint16_t audio_freq = get_audio_frequency();
         if(audio_freq != audio_freq_last){
             audio_freq_last = audio_freq;
-            dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2), 0);
+            dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2.0), 0);
             for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
-                spkr_data[i] = 0;//(int16_t)sig_data[i];
+                spkr_data[i] = (int16_t)sig_data[i];
             }
-            float tmp_samples_per_period = (float)AUDIO_SAMPLE_RATE / (float)audio_freq;
+            float tmp_samples_per_period = (float)AUDIO_SAMPLE_RATE * 2.0 / (float)audio_freq;
             uint16_t tmp_periods_in_buff = (uint16_t)((float)REC_PLAY_I2S_BUFF_SIZE / tmp_samples_per_period);
             spkr_samples_to_write = (float)tmp_periods_in_buff * tmp_samples_per_period;
+            ESP_LOGI(TAG, "freq = %d Hz, samples_per_period = %f, tmp_periods_in_buff = %d, samples_to_write = %d", audio_freq, tmp_samples_per_period, tmp_periods_in_buff, (int)spkr_samples_to_write);
         }
         
         uint8_t playing_new = get_playing();
@@ -292,13 +293,10 @@ static void i2s_echo(void *args)
         }
 
         // send data to speaker
-        err_ret = i2s_channel_write(tx_handle, spkr_data, spkr_samples_to_write, &bytes_write, 1000);
+        err_ret = i2s_channel_write(tx_handle, spkr_data, spkr_samples_to_write * sizeof(int16_t), &bytes_write, 1000);
         if (err_ret != ESP_OK) {
             ESP_LOGE(TAG, "Sending data to speaker error: %s", err_reason[err_ret == ESP_ERR_TIMEOUT]);
             abort();
-        }
-        if (bytes_read != bytes_write) {
-            ESP_LOGW(TAG, "Audio codec: Uneven number of bytes read and sent. %d bytes read, %d bytes are written", bytes_read, bytes_write);
         }
     }
     vTaskDelete(NULL);

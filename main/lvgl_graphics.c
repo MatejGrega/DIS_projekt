@@ -8,6 +8,8 @@
 #define UI_TASK_PRIORITY 0
 #define COLOR_WHITE 255,255,255
 
+bool blinking_cursor_visible = true;
+
 static uint16_t __pwr_10(uint8_t exponent){
     uint16_t result = 1;
     for( ; exponent > 0; exponent--){
@@ -21,6 +23,7 @@ static void __user_interface_task(void *args){
     button_adc_t btn_state_actual = BUTTON_NONE;
     int16_t frequency = AUDIO_FREQUENCY_MIN;
     uint8_t setting_digit_index = 0;    //0 represents LSB
+    bool actualize_lcd_blinking_cursor_flag = false;
 
     while(1){
         btn_state_actual = hw_get_buttons();
@@ -36,14 +39,14 @@ static void __user_interface_task(void *args){
                         }
                         break;
                     case BUTTON_K2:
-                        frequency += __pwr_10(setting_digit_index);
+                        frequency += __pwr_10(get_audio_freq_digit());
                         if(frequency > AUDIO_FREQUENCY_MAX){
                             frequency = AUDIO_FREQUENCY_MAX;
                         }
                         set_audio_frequency(frequency);
                         break;
                     case BUTTON_K3:
-                        frequency -= __pwr_10(setting_digit_index);
+                        frequency -= __pwr_10(get_audio_freq_digit());
                         if(frequency < AUDIO_FREQUENCY_MIN){
                             frequency = AUDIO_FREQUENCY_MIN;
                         }
@@ -68,6 +71,18 @@ static void __user_interface_task(void *args){
             }
         }
         btn_state_last = btn_state_actual;
+
+        // blinking cursor on LCD
+        if((((esp_timer_get_time() / 100000) % 10) >= 5) && !actualize_lcd_blinking_cursor_flag){
+            actualize_lcd_blinking_cursor_flag = true;
+            blinking_cursor_visible = true;
+            set_lcd_update_flag();
+        }
+        else if((((esp_timer_get_time() / 100000) % 10) < 5) && actualize_lcd_blinking_cursor_flag){
+            actualize_lcd_blinking_cursor_flag = false;
+            blinking_cursor_visible = false;
+            set_lcd_update_flag();
+        }
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
@@ -245,7 +260,7 @@ void display_graphics(lv_display_t *disp)
 
     // - - - - - - - - - - - setting frequency -> blinking cursor
 
-    if(((esp_timer_get_time() / 100000) % 10) >= 5){
+    if(blinking_cursor_visible){
         lv_draw_line_dsc_t line_freq_cursor_dsc;
         lv_draw_line_dsc_init(&line_freq_cursor_dsc);
         line_freq_cursor_dsc.color = lv_color_make(COLOR_MENU_LINES);
