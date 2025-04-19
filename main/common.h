@@ -5,7 +5,8 @@
 #include <stdbool.h>
 
 #define AUDIO_FREQUENCY_MIN 50
-#define AUDIO_FREQUENCY_MAX 8000
+#define AUDIO_FREQUENCY_MAX 7500
+#define SOUND_LEVEL_BAR_MAX_VAL 10000
 
 void set_sound_level(uint16_t sound_level);
 

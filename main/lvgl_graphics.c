@@ -10,6 +10,7 @@
 
 bool blinking_cursor_visible = true;
 
+// return 10^exponent
 static uint16_t __pwr_10(uint8_t exponent){
     uint16_t result = 1;
     for( ; exponent > 0; exponent--){
@@ -92,6 +93,7 @@ void ui_init(void){
     xTaskCreate(__user_interface_task, "buttons", UI_TASK_STACK_SIZE, NULL, UI_TASK_PRIORITY, NULL);
 }
 
+// swaping red and blue in LCD buffer - LCD is displaying red instead of blue and vice versa
 static void swap_color_bytes(void){
     uint8_t *canvas_buffer = (uint8_t*)hw_init_get_canvas_buffer();
     for (int i = 0; i < LCD_H_RES * LCD_V_RES; i++) {
@@ -107,12 +109,17 @@ static void swap_color_bytes(void){
 }
 
 
-#define COLOR_MENU_INACTIVE 0,0,10
-#define COLOR_MENU_ACTIVE   255,180,0
-#define COLOR_MENU_LINES    255, 255, 0
-#define COLOR_MENU_ARROWS   COLOR_WHITE
-#define COLOR_FREQ_CURSOR   COLOR_WHITE
-#define COLOR_DASHED_LINE   0, 255, 0
+//definitions related to graphics
+#define COLOR_BACKGROUND                10, 0, 10
+#define COLOR_MENU_INACTIVE             0,0,10
+#define COLOR_MENU_ACTIVE               255,180,0
+#define COLOR_MENU_LINES                255, 255, 0
+#define COLOR_MENU_ARROWS               COLOR_WHITE
+#define COLOR_FREQ_CURSOR               COLOR_WHITE
+#define COLOR_DASHED_LINE               0, 255, 0
+#define COLOR_SOUND_LEVEL_BAR           0, 0, 255
+#define COLOR_SOUND_LEVEL_BAR_BG        0, 0, 0
+#define COLOR_SOUND_LEVEL_BAR_BORDER    COLOR_WHITE
 
 #define MENU_LEFT_LINE_H_PX 260
 
@@ -138,34 +145,43 @@ static void swap_color_bytes(void){
 
 #define TONE_GEN_SET_VAL_LEFT_PX 120
 
-#define TEXT_FREQ_FREQ_TOP_PX   30
+#define TEXT_FREQ_FREQ_TOP_PX   40
 #define TEXT_FREQ_FREQ_LEFT_PX  10
 #define TEXT_FREQ_HEIGHT_PX     35
 #define TEXT_FREQ_TOP_PX        (TEXT_FREQ_FREQ_TOP_PX - 10)
 #define TEXT_FREQ_BOTTOM_PX     (TEXT_FREQ_TOP_PX + TEXT_FREQ_HEIGHT_PX)
-#define TEXT_FREQ_LEFT_PX       TONE_GEN_SET_VAL_LEFT_PX //(TEXT_FREQ_FREQ_LEFT_PX + 95)
+#define TEXT_FREQ_LEFT_PX       TONE_GEN_SET_VAL_LEFT_PX
 #define TEXT_FREQ_DIGIT_WIDTH   20
 
 #define TEXT_TONE_GEN_TOP_PX   5
 #define TEXT_TONE_GEN_LEFT_PX   0
 
-#define TEXT_VOL_TOP_PX         72
+#define TEXT_VOL_TOP_PX         82
 #define TEXT_VOL_LEFT_PX        10
 #define TEXT_VOL_VAL_TOP_PX     (TEXT_VOL_TOP_PX - 10)
 #define TEXT_VOL_VAL_LEFT_PX    TONE_GEN_SET_VAL_LEFT_PX
 
-#define LINE_DASHED_V_PX        110
+#define LINE_DASHED_V_PX        120
 #define DASHED_LINE_DASH_LENGTH_PX 20
 #define DASHED_LINE_WIDTH       3
 
+#define TEXT_MIC_TOP_PX         130
 #define TEXT_MIC_LEFT_PX        0
-#define TEXT_MIC_TOP_PX         120
+
+#define SOUND_LEVEL_BAR_X_PX    10
+#define SOUND_LEVEL_BAR_Y_PX    180
+#define SOUND_LEVEL_BAR_WIDTH   (MENU_LEFT_LINE_H_PX - 2 * SOUND_LEVEL_BAR_X_PX)
+#define SOUND_LEVEL_BAR_HEIGHT  25
+#define SOUND_LEVEL_BAR_BORDER_WIDTH    2
+#define TEXT_SOUND_BAR_LEFT_PX  SOUND_LEVEL_BAR_X_PX
+#define TEXT_SOUND_BAR_TOP_PX   160
 
 
+// graphics
 void display_graphics(lv_display_t *disp)
 {
     lv_obj_t *canvas = hw_init_get_canvas();
-    lv_canvas_fill_bg(canvas, lv_color_make(10, 0, 10), LV_OPA_100);
+    lv_canvas_fill_bg(canvas, lv_color_make(COLOR_BACKGROUND), LV_OPA_100);
 
     lv_layer_t layer;
     lv_canvas_init_layer(canvas, &layer);
@@ -430,6 +446,87 @@ void display_graphics(lv_display_t *disp)
     coords_txt_audio_analysis_dsc.y2 = LCD_V_RES;
     lv_draw_label(&layer, &txt_audio_analysis_dsc, &coords_txt_audio_analysis_dsc);
 
+    // sound level bar label
+    lv_draw_label_dsc_t txt_sound_bar_freq_dsc;
+    lv_draw_label_dsc_init(&txt_sound_bar_freq_dsc);
+    txt_sound_bar_freq_dsc.color = lv_color_make(COLOR_WHITE);
+    txt_sound_bar_freq_dsc.text = "Sound level:";
+    lv_area_t coords_txt_sound_bar_freq;
+    coords_txt_sound_bar_freq.x1 = TEXT_SOUND_BAR_LEFT_PX;
+    coords_txt_sound_bar_freq.y1 = TEXT_SOUND_BAR_TOP_PX;
+    coords_txt_sound_bar_freq.x2 = LCD_H_RES;
+    coords_txt_sound_bar_freq.y2 = LCD_V_RES;
+    lv_draw_label(&layer, &txt_sound_bar_freq_dsc, &coords_txt_sound_bar_freq);
+
+    // - - - - - - - - - - - Audio analysis -> sound level bar
+
+    // sound level bar background
+    lv_draw_rect_dsc_t sound_level_bar_bg_dsc;
+    lv_draw_rect_dsc_init(&sound_level_bar_bg_dsc);
+    sound_level_bar_bg_dsc.bg_color = lv_color_make(COLOR_SOUND_LEVEL_BAR_BG);
+    lv_area_t sound_level_bar_bg_coords;
+    sound_level_bar_bg_coords.x1 = SOUND_LEVEL_BAR_X_PX;
+    sound_level_bar_bg_coords.y1 = SOUND_LEVEL_BAR_Y_PX;
+    sound_level_bar_bg_coords.x2 = sound_level_bar_bg_coords.x1 + SOUND_LEVEL_BAR_WIDTH;
+    sound_level_bar_bg_coords.y2 = sound_level_bar_bg_coords.y1 + SOUND_LEVEL_BAR_HEIGHT;
+    lv_draw_rect(&layer, &sound_level_bar_bg_dsc, &sound_level_bar_bg_coords);
+    
+    // sound level bar fill
+    uint32_t sound_level_bar_value_px = (uint32_t)get_sound_level() * SOUND_LEVEL_BAR_WIDTH / SOUND_LEVEL_BAR_MAX_VAL;
+    if(sound_level_bar_value_px > SOUND_LEVEL_BAR_WIDTH){
+        sound_level_bar_value_px = SOUND_LEVEL_BAR_WIDTH;
+    }
+    lv_draw_rect_dsc_t sound_level_bar_rct_dsc;
+    lv_draw_rect_dsc_init(&sound_level_bar_rct_dsc);
+    sound_level_bar_rct_dsc.bg_color = lv_color_make(COLOR_SOUND_LEVEL_BAR);
+    lv_area_t sound_level_bar_rct_coords;
+    sound_level_bar_rct_coords.x1 = SOUND_LEVEL_BAR_X_PX;
+    sound_level_bar_rct_coords.y1 = SOUND_LEVEL_BAR_Y_PX;
+    sound_level_bar_rct_coords.x2 = sound_level_bar_rct_coords.x1 + sound_level_bar_value_px;
+    sound_level_bar_rct_coords.y2 = sound_level_bar_rct_coords.y1 + SOUND_LEVEL_BAR_HEIGHT;
+    lv_draw_rect(&layer, &sound_level_bar_rct_dsc, &sound_level_bar_rct_coords);
+
+    // Sound level bar border
+    lv_draw_line_dsc_t line_sound_level_bar_left_dsc;
+    lv_draw_line_dsc_init(&line_sound_level_bar_left_dsc);
+    line_sound_level_bar_left_dsc.color = lv_color_make(COLOR_SOUND_LEVEL_BAR_BORDER);
+    line_sound_level_bar_left_dsc.width = SOUND_LEVEL_BAR_BORDER_WIDTH;
+    line_sound_level_bar_left_dsc.p1.x = SOUND_LEVEL_BAR_X_PX;
+    line_sound_level_bar_left_dsc.p1.y = SOUND_LEVEL_BAR_Y_PX;
+    line_sound_level_bar_left_dsc.p2.x = SOUND_LEVEL_BAR_X_PX;
+    line_sound_level_bar_left_dsc.p2.y = line_sound_level_bar_left_dsc.p1.y + SOUND_LEVEL_BAR_HEIGHT;
+    lv_draw_line(&layer, &line_sound_level_bar_left_dsc);
+
+    lv_draw_line_dsc_t line_sound_level_bar_right_dsc;
+    lv_draw_line_dsc_init(&line_sound_level_bar_right_dsc);
+    line_sound_level_bar_right_dsc.color = lv_color_make(COLOR_SOUND_LEVEL_BAR_BORDER);
+    line_sound_level_bar_right_dsc.width = SOUND_LEVEL_BAR_BORDER_WIDTH;
+    line_sound_level_bar_right_dsc.p1.x = SOUND_LEVEL_BAR_X_PX + SOUND_LEVEL_BAR_WIDTH;
+    line_sound_level_bar_right_dsc.p1.y = SOUND_LEVEL_BAR_Y_PX;
+    line_sound_level_bar_right_dsc.p2.x = SOUND_LEVEL_BAR_X_PX + SOUND_LEVEL_BAR_WIDTH;
+    line_sound_level_bar_right_dsc.p2.y = line_sound_level_bar_right_dsc.p1.y + SOUND_LEVEL_BAR_HEIGHT;
+    lv_draw_line(&layer, &line_sound_level_bar_right_dsc);
+
+    lv_draw_line_dsc_t line_sound_level_bar_top_dsc;
+    lv_draw_line_dsc_init(&line_sound_level_bar_top_dsc);
+    line_sound_level_bar_top_dsc.color = lv_color_make(COLOR_SOUND_LEVEL_BAR_BORDER);
+    line_sound_level_bar_top_dsc.width = SOUND_LEVEL_BAR_BORDER_WIDTH;
+    line_sound_level_bar_top_dsc.p1.x = SOUND_LEVEL_BAR_X_PX;
+    line_sound_level_bar_top_dsc.p1.y = SOUND_LEVEL_BAR_Y_PX;
+    line_sound_level_bar_top_dsc.p2.x = SOUND_LEVEL_BAR_X_PX + SOUND_LEVEL_BAR_WIDTH;
+    line_sound_level_bar_top_dsc.p2.y = SOUND_LEVEL_BAR_Y_PX;
+    lv_draw_line(&layer, &line_sound_level_bar_top_dsc);
+
+    lv_draw_line_dsc_t line_sound_level_bar_bottom_dsc;
+    lv_draw_line_dsc_init(&line_sound_level_bar_bottom_dsc);
+    line_sound_level_bar_bottom_dsc.color = lv_color_make(COLOR_SOUND_LEVEL_BAR_BORDER);
+    line_sound_level_bar_bottom_dsc.width = SOUND_LEVEL_BAR_BORDER_WIDTH;
+    line_sound_level_bar_bottom_dsc.p1.x = SOUND_LEVEL_BAR_X_PX;
+    line_sound_level_bar_bottom_dsc.p1.y = SOUND_LEVEL_BAR_Y_PX + SOUND_LEVEL_BAR_HEIGHT;
+    line_sound_level_bar_bottom_dsc.p2.x = SOUND_LEVEL_BAR_X_PX + SOUND_LEVEL_BAR_WIDTH;
+    line_sound_level_bar_bottom_dsc.p2.y = SOUND_LEVEL_BAR_Y_PX + SOUND_LEVEL_BAR_HEIGHT;
+    lv_draw_line(&layer, &line_sound_level_bar_bottom_dsc);
+
     // - - - - - - - - - - - MENU -> lines (border of buttons)
 
     lv_draw_line_dsc_t line_menu_left_dsc;
@@ -636,10 +733,6 @@ void display_graphics(lv_display_t *disp)
     lv_area_t coords_text_vol_down = {MENU_LEFT_LINE_H_PX, MENU_6TH_TEXT_V_PX, LCD_H_RES, LCD_V_RES};
     lv_draw_label(&layer, &text_vol_down_dsc, &coords_text_vol_down);
 
-
-
-    
-    
 
     lv_canvas_finish_layer(canvas, &layer);
 

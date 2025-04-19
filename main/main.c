@@ -19,6 +19,15 @@
 #include "esp_log.h"
 #include "lvgl.h"
 #include "esp_lcd_ili9341.h"
+#include <stdlib.h>
+#include <string.h>
+#include "esp_system.h"
+#include "soc/gpio_struct.h"
+#include "driver/uart.h"
+#include "soc/uart_struct.h"
+#include <math.h>
+
+#include "esp_dsp.h"
 //#include "led_strip.h"
 
 //custom files
@@ -27,12 +36,16 @@
 #include "lvgl_graphics.h"
 
 // buffer size for recording and playing audio
-#define REC_PLAY_I2S_BUFF_SIZE   (2400)
+#define MIC_I2S_BUFF_SIZE   (2400)
+#define SPKR_I2S_BUFF_SIZE  (32000)
 
 // LCD related definitions
-#define LVGL_TASK_MAX_DELAY_MS 500
-#define LVGL_TASK_STACK_SIZE   (4 * 1024)
-#define LVGL_TASK_PRIORITY     2
+#define LVGL_TASK_MAX_DELAY_MS  500
+#define LVGL_TASK_STACK_SIZE    (4 * 1024)
+#define LVGL_TASK_PRIORITY      2
+
+#define RGB_LED_RED_MAX_INTENSITY   80
+#define RGB_LED_GREEN_MAX_INTENSITY   35
 
 static const char *TAG = "DIS_projekt";
 
@@ -42,6 +55,9 @@ lv_display_t *display;
 static _lock_t lvgl_api_lock;
 
 static led_strip_handle_t led_strip;
+
+static i2s_chan_handle_t tx_handle = NULL;
+static i2s_chan_handle_t rx_handle = NULL;
 
 //LVGL task
 static void lvgl_port_task(void *arg){
@@ -58,288 +74,144 @@ static void lvgl_port_task(void *arg){
     }
 }
 
-
-static const char err_reason[][30] = {"input param is invalid",
-                                      "operation timeout"
-                                     };
-static i2s_chan_handle_t tx_handle = NULL;
-static i2s_chan_handle_t rx_handle = NULL;
-
-
-
-
-
-
-#include <stdlib.h>
-#include <string.h>
-#include "esp_system.h"
-#include "soc/gpio_struct.h"
-#include "driver/gpio.h"
-#include "driver/uart.h"
-#include "soc/uart_struct.h"
-#include <math.h>
-
-#include "esp_dsp.h"
-
-const float low_pass_coefs[] = {
-    -0.001375616062081043,
-    -0.001681932845199558,
-    -0.002001418224072743,
-    -0.002327833476324061,
-    -0.002654043677172017,
-    -0.002972086781993778,
-    -0.003273264009542430,
-    -0.003548250747225786,
-    -0.003787226733313199,
-    -0.003980023814881915,
-    -0.004116289145086632,
-    -0.004185661279072421,
-    -0.004177956264250299,
-    -0.004083360506746956,
-    -0.003892626939769326,
-    -0.003597270828446691,
-    -0.003189761425214370,
-    -0.002663705644347283,
-    -0.002014019956653185,
-    -0.001237086816769248,
-    -0.000330892125450211,
-    0.000704859504543284,
-    0.001868654571781152,
-    0.003157108086201147,
-    0.004564930568294723,
-    0.006084926153689202,
-    0.007708022751750492,
-    0.009423334618575361,
-    0.011218257097468909,
-    0.013078592665903825,
-    0.014988706819547204,
-    0.016931711733782703,
-    0.018889675083595028,
-    0.020843850885573320,
-    0.022774928762230223,
-    0.024663297628921062,
-    0.026489319476253662,
-    0.028233608673440165,
-    0.029877312056391291,
-    0.031402384992582341,
-    0.032791858635076124,
-    0.034030093690914809,
-    0.035103016232811389,
-    0.035998331374202143,
-    0.036705711000949492,
-    0.037216952201264218,
-    0.037526103550118435,
-    0.037629556975503305,
-    0.037526103550118435,
-    0.037216952201264218,
-    0.036705711000949492,
-    0.035998331374202143,
-    0.035103016232811389,
-    0.034030093690914809,
-    0.032791858635076124,
-    0.031402384992582341,
-    0.029877312056391291,
-    0.028233608673440165,
-    0.026489319476253662,
-    0.024663297628921062,
-    0.022774928762230223,
-    0.020843850885573320,
-    0.018889675083595032,
-    0.016931711733782703,
-    0.014988706819547204,
-    0.013078592665903825,
-    0.011218257097468909,
-    0.009423334618575361,
-    0.007708022751750492,
-    0.006084926153689202,
-    0.004564930568294723,
-    0.003157108086201147,
-    0.001868654571781152,
-    0.000704859504543284,
-    -0.000330892125450211,
-    -0.001237086816769248,
-    -0.002014019956653185,
-    -0.002663705644347283,
-    -0.003189761425214370,
-    -0.003597270828446690,
-    -0.003892626939769326,
-    -0.004083360506746956,
-    -0.004177956264250299,
-    -0.004185661279072421,
-    -0.004116289145086634,
-    -0.003980023814881915,
-    -0.003787226733313199,
-    -0.003548250747225788,
-    -0.003273264009542430,
-    -0.002972086781993778,
-    -0.002654043677172016,
-    -0.002327833476324061,
-    -0.002001418224072743,
-    -0.001681932845199558,
-    -0.001375616062081043
-};
-
-
-static void i2s_echo(void *args)
+// task for sending data to speaker
+static void spkr_task(void *args)
 {
-    int16_t *mic_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
-    //int16_t *spkr_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
-    int16_t *spkr_data = malloc(64000 * sizeof(int16_t));
-    //float *sig_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(float));
-    float *sig_data = malloc(64000 * sizeof(float));
-    bool PCM_printed = false;
+    // allocate RAM for buffers holding samples of output signal
+    int16_t *spkr_data = malloc(SPKR_I2S_BUFF_SIZE * sizeof(int16_t));
+    float *sig_data = malloc(SPKR_I2S_BUFF_SIZE * sizeof(float));
+
+    // values from last cycle: volume value, state of playing (on/off) and set output frequency
     uint8_t volume_last = 0;
     bool playing_last = !get_playing();
     uint16_t audio_freq_last = 0;
-    uint32_t spkr_samples_to_write = REC_PLAY_I2S_BUFF_SIZE; //length of active area in speaker buffer (integer multiple of generated signal period)
 
-    if (!mic_data) {
-        ESP_LOGE(TAG, "[echo] No memory for read data buffer");
-        abort();
-    }
+    // test memory allocation
     if (!spkr_data) {
-        ESP_LOGE(TAG, "[echo] No memory for write data buffer");
+        ESP_LOGE(TAG, "Memory for speaker data allocation error.");
         abort();
     }
     esp_err_t err_ret = ESP_OK;
-    size_t bytes_read = 0;
-    size_t bytes_write = 0;
-    ESP_LOGI(TAG, "[echo] Echo start");
-
-    /*dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)400/((float)AUDIO_SAMPLE_RATE * 2), 0);
-    for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
-       spkr_data[i] = 0;//(int16_t)sig_data[i];
-    }*/
+    size_t bytes_write = 0;     //number of bytes send to codec
 
     while (1) {
-        memset(mic_data, 0, REC_PLAY_I2S_BUFF_SIZE);
-        // Read sample data from mic
-        err_ret = i2s_channel_read(rx_handle, mic_data, REC_PLAY_I2S_BUFF_SIZE, &bytes_read, 1000);
-        if (err_ret != ESP_OK) {
-            ESP_LOGE(TAG, "Reading data from microphone error: %s", err_reason[err_ret == ESP_ERR_TIMEOUT]);
-            //abort();
-        }
-
-
-        int16_t mic_min = 32767;
-        int16_t mic_max = -32768;
-        for(uint32_t i = 0; i < 100; i++){
-            if(mic_data[i] < mic_min){
-                mic_min = mic_data[i];
-            }
-            if(mic_data[i] > mic_max){
-                mic_max = mic_data[i];
-            }
-        }
-        set_sound_level(mic_max - mic_min);
-
-
-        /*if((esp_timer_get_time() > (10 * 1000 * 1000)) && !PCM_printed){
-            PCM_printed = true;
-            float mic_min = MAXFLOAT;
-            float mic_max = -10e20;
-            memset(sig_data, 0, REC_PLAY_I2S_BUFF_SIZE);
-            for(uint32_t i = 0; i < 1000; i++){
-                for(uint32_t j = 0; j < 95; j++){
-                    uint32_t sig_index = i + j;
-                    if(sig_index < 1000){
-                        sig_data[sig_index] += (float)mic_data[i] * low_pass_coefs[j];
-                    }
-                    else{
-                        j = 95;
-                    }
-                }
-                //ESP_LOGI(TAG, "%d = %d", (int)i, mic_data[i]);
-                if(sig_data[i] < mic_min){
-                    mic_min = sig_data[i];
-                }
-                if(sig_data[i] > mic_max){
-                    mic_max = sig_data[i];
-                }
-            }
-            ESP_LOGI(TAG, "MIN: %f\nMAX: %f", mic_min, mic_max);
-        }*/
-
-
         uint16_t audio_freq = get_audio_frequency();
+
+        //compute new samples of output signal if set frequency was changed
         if(audio_freq != audio_freq_last){
             audio_freq_last = audio_freq;
-            dsps_tone_gen_f32(sig_data, 64000, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2.0), 0);
-            for(uint16_t i = 0; i < 64000; i++){
-                spkr_data[i] = (int16_t)sig_data[i];
+            //generate sine wave
+            dsps_tone_gen_f32(sig_data, SPKR_I2S_BUFF_SIZE, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2.0), 0);
+            if(get_playing()){
+                //copy signal samples from intermediate buffer to speaker buffer
+                for(uint16_t i = 0; i < SPKR_I2S_BUFF_SIZE; i++){
+                    spkr_data[i] = (int16_t)sig_data[i];
+                }
             }
-            float tmp_samples_per_period = (float)AUDIO_SAMPLE_RATE * 2.0 / (float)audio_freq;
-            uint16_t tmp_periods_in_buff = (uint16_t)((float)REC_PLAY_I2S_BUFF_SIZE / tmp_samples_per_period);
-            spkr_samples_to_write = (float)tmp_periods_in_buff * tmp_samples_per_period;
-            ESP_LOGI(TAG, "freq = %d Hz, samples_per_period = %f, tmp_periods_in_buff = %d, samples_to_write = %d", audio_freq, tmp_samples_per_period, tmp_periods_in_buff, (int)spkr_samples_to_write);
         }
         
+        //mute or unmute speaker if needed
         uint8_t playing_new = get_playing();
         bool actualize_volume = false;
         if(playing_last != playing_new){
             playing_last = playing_new;
             if(playing_new == false){
-                memset(spkr_data, 0, 64000 * sizeof(int16_t));
+                //fill output buffer with zeros
+                memset(spkr_data, 0, SPKR_I2S_BUFF_SIZE * sizeof(int16_t));
             }
             else{
-                actualize_volume = true;
+                actualize_volume = true;    //flag that cause refilling output buffer with signal samples
             }
         }
+
         // recompute samples for speaker if volume or playing state has changed
         uint8_t volume_new = get_volume();
         if(((volume_last != volume_new) || actualize_volume) && playing_new){
             volume_last = volume_new;
-            for(uint16_t i = 0; i < 64000; i++){
-                spkr_data[i] = (int16_t)(sig_data[i] * volume_new / VOLUME_MAX);
+            for(uint16_t i = 0; i < SPKR_I2S_BUFF_SIZE; i++){
+                spkr_data[i] = (int16_t)(sig_data[i] * volume_new / VOLUME_MAX);    //adjust aplitude
             }
         }
 
         // send data to speaker
-        err_ret = i2s_channel_write(tx_handle, spkr_data, 32000 * sizeof(int16_t), &bytes_write, 10000);
+        err_ret = i2s_channel_write(tx_handle, spkr_data, SPKR_I2S_BUFF_SIZE * sizeof(int16_t), &bytes_write, 10000);
         if (err_ret != ESP_OK) {
-            ESP_LOGE(TAG, "Sending data to speaker error: %s", err_reason[err_ret == ESP_ERR_TIMEOUT]);
+            ESP_LOGE(TAG, "Sending data to speaker error.");
             abort();
         }
     }
     vTaskDelete(NULL);
 }
 
+// task for reading data from microphone and computing amplitude
+static void mic_task(void *args){
+    // allocate RAM for buffer holding samples of input signal
+    int16_t *mic_data = malloc(MIC_I2S_BUFF_SIZE * sizeof(int16_t));
+    esp_err_t err_ret = ESP_OK;
+    size_t bytes_read = 0;
 
+    // test memory allocation
+    if (!mic_data) {
+        ESP_LOGE(TAG, "Memory for microphone data allocation error.");
+        abort();
+    }
 
+    while(1){
+        // Read data from microphone
+        err_ret = i2s_channel_read(rx_handle, mic_data, MIC_I2S_BUFF_SIZE * sizeof(int16_t), &bytes_read, 1000);
+        if (err_ret != ESP_OK) {
+            ESP_LOGE(TAG, "Reading data from microphone error.");
+            abort();
+        }
 
+        //find minimum and maximum of input signal
+        int16_t max_mic_val = -32000;
+        int16_t min_mic_val = 32000;
+        for(uint16_t i = 0; i < MIC_I2S_BUFF_SIZE; i++){
+            if(mic_data[i] > max_mic_val){
+                max_mic_val = mic_data[i];
+            }
+            if(mic_data[i] < min_mic_val){
+                min_mic_val = mic_data[i];
+            }
+        }
+        set_sound_level(max_mic_val - min_mic_val); //compute amplitude
+    }
+    vTaskDelete(NULL);
+}
 
+// RGB LED is signaling sound level - full green = silence, full red = high sound level
+void RGB_LED_task(void *args){
+    while(1){
+        uint32_t red_val;
+        uint32_t green_val;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        red_val = get_sound_level();
+        red_val = red_val > SOUND_LEVEL_BAR_MAX_VAL ? SOUND_LEVEL_BAR_MAX_VAL : red_val;
+        green_val = SOUND_LEVEL_BAR_MAX_VAL - red_val;
+        red_val = red_val * RGB_LED_RED_MAX_INTENSITY / SOUND_LEVEL_BAR_MAX_VAL;
+        green_val = green_val * RGB_LED_GREEN_MAX_INTENSITY / SOUND_LEVEL_BAR_MAX_VAL;
+        led_strip_set_pixel(led_strip, 0, red_val, green_val, 0);
+        led_strip_refresh(led_strip);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(NULL);
+}
 
 void app_main(void)
 {
+    //initialize hardware and submodules
     hw_init_audio(&tx_handle, &rx_handle);
     hw_init_lcd(display);
     hw_init_LED_RGB(&led_strip);
     hw_init_buttons();
 
-    ESP_LOGI(TAG, "Create LVGL task");
     xTaskCreate(lvgl_port_task, "LVGL", LVGL_TASK_STACK_SIZE, NULL, LVGL_TASK_PRIORITY, NULL);
     ui_init();
+    xTaskCreate(spkr_task, "spkr_task", 8192, NULL, 5, NULL);
+    xTaskCreate(mic_task, "mic_task", 4096, NULL, 4, NULL);
+    xTaskCreate(RGB_LED_task, "RGB_LED_task", 2048, NULL, 0, NULL);
 
-    xTaskCreate(i2s_echo, "i2s_echo", 8192, NULL, 5, NULL);
-
-
-    led_strip_set_pixel(led_strip, 0, 16, 1, 16);
-    led_strip_refresh(led_strip);
 
     while(1){
         if(get_lcd_update_flag()){

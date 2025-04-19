@@ -11,8 +11,10 @@
 
 #define VOLUME_MAX 100
 
+// initialize user interface
 void ui_init(void);
 
+// print actual graphics on LCD
 void display_graphics(lv_display_t *disp);
 
 
