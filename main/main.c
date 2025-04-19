@@ -188,6 +188,8 @@ static void i2s_echo(void *args)
     bool PCM_printed = false;
     uint8_t volume_last = 0;
     bool playing_last = !get_playing();
+    uint16_t audio_freq_last = 0;
+    uint32_t spkr_samples_to_write = REC_PLAY_I2S_BUFF_SIZE; //length of active area in speaker buffer (integer multiple of generated signal period)
 
     if (!mic_data) {
         ESP_LOGE(TAG, "[echo] No memory for read data buffer");
@@ -202,10 +204,10 @@ static void i2s_echo(void *args)
     size_t bytes_write = 0;
     ESP_LOGI(TAG, "[echo] Echo start");
 
-    dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)400/((float)AUDIO_SAMPLE_RATE * 2), 0);
+    /*dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)400/((float)AUDIO_SAMPLE_RATE * 2), 0);
     for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
        spkr_data[i] = 0;//(int16_t)sig_data[i];
-    }
+    }*/
 
     while (1) {
         memset(mic_data, 0, REC_PLAY_I2S_BUFF_SIZE);
@@ -230,7 +232,7 @@ static void i2s_echo(void *args)
         set_sound_level(mic_max - mic_min);
 
 
-        /*if((esp_timer_get_time() > (4 * 1000 * 1000)) && !PCM_printed){
+        /*if((esp_timer_get_time() > (10 * 1000 * 1000)) && !PCM_printed){
             PCM_printed = true;
             float mic_min = MAXFLOAT;
             float mic_max = -10e20;
@@ -256,6 +258,19 @@ static void i2s_echo(void *args)
             ESP_LOGI(TAG, "MIN: %f\nMAX: %f", mic_min, mic_max);
         }*/
 
+
+        uint16_t audio_freq = get_audio_frequency();
+        if(audio_freq != audio_freq_last){
+            audio_freq_last = audio_freq;
+            dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2), 0);
+            for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
+                spkr_data[i] = 0;//(int16_t)sig_data[i];
+            }
+            float tmp_samples_per_period = (float)AUDIO_SAMPLE_RATE / (float)audio_freq;
+            uint16_t tmp_periods_in_buff = (uint16_t)((float)REC_PLAY_I2S_BUFF_SIZE / tmp_samples_per_period);
+            spkr_samples_to_write = (float)tmp_periods_in_buff * tmp_samples_per_period;
+        }
+        
         uint8_t playing_new = get_playing();
         bool actualize_volume = false;
         if(playing_last != playing_new){
@@ -277,7 +292,7 @@ static void i2s_echo(void *args)
         }
 
         // send data to speaker
-        err_ret = i2s_channel_write(tx_handle, spkr_data, REC_PLAY_I2S_BUFF_SIZE, &bytes_write, 1000);
+        err_ret = i2s_channel_write(tx_handle, spkr_data, spkr_samples_to_write, &bytes_write, 1000);
         if (err_ret != ESP_OK) {
             ESP_LOGE(TAG, "Sending data to speaker error: %s", err_reason[err_ret == ESP_ERR_TIMEOUT]);
             abort();
@@ -331,7 +346,8 @@ void app_main(void)
             _lock_acquire(&lvgl_api_lock);
             display_graphics(display);
             _lock_release(&lvgl_api_lock);
+            reset_lcd_update_flag();
         }
-        usleep(20 * 1000);
+        usleep(10 * 1000);
     }
 }

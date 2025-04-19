@@ -291,7 +291,7 @@ button_adc_t hw_get_buttons(void){
 
 #define AUDIO_MCLK_MULTIPLE   (384) // If not using 24-bit data width, 256 should be enough
 #define AUDIO_MCLK_FREQ_HZ    (AUDIO_SAMPLE_RATE * AUDIO_MCLK_MULTIPLE)
-#define AUDIO_VOICE_VOLUME    70 // range: 0-100
+#define AUDIO_VOICE_VOLUME    80 // range: 0-100
 #define AUDIO_MIC_GAIN        (ES8311_MIC_GAIN_36DB)
 
 // I2C port and GPIOs 

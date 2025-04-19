@@ -39,6 +39,10 @@ inline void set_lcd_update_flag(void){
     __update_lcd = true;
 }
 
+inline void reset_lcd_update_flag(void){
+    __update_lcd = false;
+}
+
 inline bool get_lcd_update_flag(void){
     return __update_lcd;
 }

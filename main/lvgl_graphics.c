@@ -31,7 +31,7 @@ static void __user_interface_task(void *args){
                     case BUTTON_K1:
                     setting_digit_index = get_audio_freq_digit();
                     set_audio_freq_digit(++setting_digit_index);
-                        if(get_audio_freq_digit() > 4){
+                        if(get_audio_freq_digit() > 3){
                             set_audio_freq_digit(0);
                         }
                         break;
@@ -97,6 +97,7 @@ static void swap_color_bytes(void){
 #define COLOR_MENU_LINES    255, 255, 0
 #define COLOR_MENU_ARROWS   COLOR_WHITE
 #define COLOR_FREQ_CURSOR   COLOR_WHITE
+#define COLOR_DASHED_LINE   0, 255, 0
 
 #define MENU_LEFT_LINE_H_PX 260
 
@@ -122,21 +123,29 @@ static void swap_color_bytes(void){
 
 #define TONE_GEN_SET_VAL_LEFT_PX 120
 
-#define TEXT_FREQ_FREQ_TOP_PX   28
+#define TEXT_FREQ_FREQ_TOP_PX   30
 #define TEXT_FREQ_FREQ_LEFT_PX  10
 #define TEXT_FREQ_HEIGHT_PX     35
-#define TEXT_FREQ_TOP_PX        (TEXT_FREQ_FREQ_TOP_PX - 8)
+#define TEXT_FREQ_TOP_PX        (TEXT_FREQ_FREQ_TOP_PX - 10)
 #define TEXT_FREQ_BOTTOM_PX     (TEXT_FREQ_TOP_PX + TEXT_FREQ_HEIGHT_PX)
 #define TEXT_FREQ_LEFT_PX       TONE_GEN_SET_VAL_LEFT_PX //(TEXT_FREQ_FREQ_LEFT_PX + 95)
 #define TEXT_FREQ_DIGIT_WIDTH   20
 
-#define TEXT_TONE_GENT_TOP_PX   5
+#define TEXT_TONE_GEN_TOP_PX   5
 #define TEXT_TONE_GEN_LEFT_PX   0
 
-#define TEXT_VOL_TOP_PX         70
+#define TEXT_VOL_TOP_PX         72
 #define TEXT_VOL_LEFT_PX        10
-#define TEXT_VOL_VAL_TOP_PX     (TEXT_VOL_TOP_PX - 8)
+#define TEXT_VOL_VAL_TOP_PX     (TEXT_VOL_TOP_PX - 10)
 #define TEXT_VOL_VAL_LEFT_PX    TONE_GEN_SET_VAL_LEFT_PX
+
+#define LINE_DASHED_V_PX        110
+#define DASHED_LINE_DASH_LENGTH_PX 20
+#define DASHED_LINE_WIDTH       3
+
+#define TEXT_MIC_LEFT_PX        0
+#define TEXT_MIC_TOP_PX         120
+
 
 void display_graphics(lv_display_t *disp)
 {
@@ -155,8 +164,8 @@ void display_graphics(lv_display_t *disp)
     txt_tone_gen.align = LV_ALIGN_TOP_MID;
     lv_area_t coords_txt_tone_gen;
     coords_txt_tone_gen.x1 = TEXT_TONE_GEN_LEFT_PX;
-    coords_txt_tone_gen.y1 = TEXT_TONE_GENT_TOP_PX;
-    coords_txt_tone_gen.x2 = LCD_H_RES;
+    coords_txt_tone_gen.y1 = TEXT_TONE_GEN_TOP_PX;
+    coords_txt_tone_gen.x2 = MENU_LEFT_LINE_H_PX;
     coords_txt_tone_gen.y2 = LCD_V_RES;
     lv_draw_label(&layer, &txt_tone_gen, &coords_txt_tone_gen);
 
@@ -287,12 +296,12 @@ void display_graphics(lv_display_t *disp)
     coords_volume.x2 = LCD_H_RES;
     coords_volume.y2 = LCD_V_RES;
     lv_draw_label(&layer, &txt_volume_dsc, &coords_volume);
-/*
+
     lv_draw_label_dsc_t txt_volume_val_dsc;
     lv_draw_label_dsc_init(&txt_volume_val_dsc);
     txt_volume_val_dsc.color = lv_color_make(COLOR_WHITE);
     txt_volume_val_dsc.font = &lv_font_montserrat_30;
-    char vol_buff[30] = {0};
+    char vol_buff[10] = {0};
     itoa((int)get_volume(), vol_buff, 10);
     txt_volume_val_dsc.text = vol_buff;
     lv_area_t coords_volume_val;
@@ -301,7 +310,6 @@ void display_graphics(lv_display_t *disp)
     coords_volume_val.x2 = LCD_H_RES;
     coords_volume_val.y2 = LCD_V_RES;
     lv_draw_label(&layer, &txt_volume_val_dsc, &coords_volume_val);
-*/
 
     // - - - - - - - - - - - MENU -> background and active button
 
@@ -322,6 +330,90 @@ void display_graphics(lv_display_t *disp)
     }
     lv_area_t bg_menu_active_coords = {MENU_LEFT_LINE_H_PX, ((btn_curr_state - BUTTON_K1) * MENU_1ST_LINE_V_PX), LCD_H_RES, ((btn_curr_state - BUTTON_K1 + 1) * MENU_1ST_LINE_V_PX)};
     lv_draw_rect(&layer, &bg_menu_active_dsc, &bg_menu_active_coords);
+
+    // - - - - - - - - - - - Audio analysis -> dashed line and label
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_0_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_0_dsc);
+    line_audio_analysis_dashed_0_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_0_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_0_dsc.p1.x = 0 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_0_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_0_dsc.p2.x = line_audio_analysis_dashed_0_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_0_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_0_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_1_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_1_dsc);
+    line_audio_analysis_dashed_1_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_1_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_1_dsc.p1.x = 1 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_1_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_1_dsc.p2.x = line_audio_analysis_dashed_1_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_1_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_1_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_2_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_2_dsc);
+    line_audio_analysis_dashed_2_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_2_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_2_dsc.p1.x = 2 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_2_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_2_dsc.p2.x = line_audio_analysis_dashed_2_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_2_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_2_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_3_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_3_dsc);
+    line_audio_analysis_dashed_3_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_3_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_3_dsc.p1.x = 3 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_3_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_3_dsc.p2.x = line_audio_analysis_dashed_3_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_3_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_3_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_4_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_4_dsc);
+    line_audio_analysis_dashed_4_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_4_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_4_dsc.p1.x = 4 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_4_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_4_dsc.p2.x = line_audio_analysis_dashed_4_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_4_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_4_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_5_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_5_dsc);
+    line_audio_analysis_dashed_5_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_5_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_5_dsc.p1.x = 5 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_5_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_5_dsc.p2.x = line_audio_analysis_dashed_5_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_5_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_5_dsc);
+
+    lv_draw_line_dsc_t line_audio_analysis_dashed_6_dsc;
+    lv_draw_line_dsc_init(&line_audio_analysis_dashed_6_dsc);
+    line_audio_analysis_dashed_6_dsc.color = lv_color_make(COLOR_DASHED_LINE);
+    line_audio_analysis_dashed_6_dsc.width = DASHED_LINE_WIDTH;
+    line_audio_analysis_dashed_6_dsc.p1.x = 6 * 2 * DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_6_dsc.p1.y = LINE_DASHED_V_PX;
+    line_audio_analysis_dashed_6_dsc.p2.x = line_audio_analysis_dashed_6_dsc.p1.x + DASHED_LINE_DASH_LENGTH_PX;
+    line_audio_analysis_dashed_6_dsc.p2.y = LINE_DASHED_V_PX;
+    lv_draw_line(&layer, &line_audio_analysis_dashed_6_dsc);
+
+    lv_draw_label_dsc_t txt_audio_analysis_dsc;
+    lv_draw_label_dsc_init(&txt_audio_analysis_dsc);
+    txt_audio_analysis_dsc.color = lv_color_make(COLOR_WHITE);
+    txt_audio_analysis_dsc.text = "Audio analysis:";
+    txt_audio_analysis_dsc.align = LV_ALIGN_TOP_MID;
+    lv_area_t coords_txt_audio_analysis_dsc;
+    coords_txt_audio_analysis_dsc.x1 = TEXT_MIC_LEFT_PX;
+    coords_txt_audio_analysis_dsc.y1 = TEXT_MIC_TOP_PX;
+    coords_txt_audio_analysis_dsc.x2 = MENU_LEFT_LINE_H_PX;
+    coords_txt_audio_analysis_dsc.y2 = LCD_V_RES;
+    lv_draw_label(&layer, &txt_audio_analysis_dsc, &coords_txt_audio_analysis_dsc);
 
     // - - - - - - - - - - - MENU -> lines (border of buttons)
 
@@ -531,6 +623,7 @@ void display_graphics(lv_display_t *disp)
 
 
 
+    
     
 
     lv_canvas_finish_layer(canvas, &layer);

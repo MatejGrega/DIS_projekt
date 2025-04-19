@@ -21,6 +21,8 @@ bool get_playing(void);
 
 void set_lcd_update_flag(void);
 
+void reset_lcd_update_flag(void);
+
 bool get_lcd_update_flag(void);
 
 void set_audio_frequency(uint16_t freq);
