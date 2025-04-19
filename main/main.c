@@ -183,8 +183,10 @@ const float low_pass_coefs[] = {
 static void i2s_echo(void *args)
 {
     int16_t *mic_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
-    int16_t *spkr_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
-    float *sig_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(float));
+    //int16_t *spkr_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
+    int16_t *spkr_data = malloc(64000 * sizeof(int16_t));
+    //float *sig_data = malloc(REC_PLAY_I2S_BUFF_SIZE * sizeof(float));
+    float *sig_data = malloc(64000 * sizeof(float));
     bool PCM_printed = false;
     uint8_t volume_last = 0;
     bool playing_last = !get_playing();
@@ -262,8 +264,8 @@ static void i2s_echo(void *args)
         uint16_t audio_freq = get_audio_frequency();
         if(audio_freq != audio_freq_last){
             audio_freq_last = audio_freq;
-            dsps_tone_gen_f32(sig_data, REC_PLAY_I2S_BUFF_SIZE, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2.0), 0);
-            for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
+            dsps_tone_gen_f32(sig_data, 64000, 1000, (float)audio_freq/((float)AUDIO_SAMPLE_RATE * 2.0), 0);
+            for(uint16_t i = 0; i < 64000; i++){
                 spkr_data[i] = (int16_t)sig_data[i];
             }
             float tmp_samples_per_period = (float)AUDIO_SAMPLE_RATE * 2.0 / (float)audio_freq;
@@ -277,7 +279,7 @@ static void i2s_echo(void *args)
         if(playing_last != playing_new){
             playing_last = playing_new;
             if(playing_new == false){
-                memset(spkr_data, 0, REC_PLAY_I2S_BUFF_SIZE * sizeof(int16_t));
+                memset(spkr_data, 0, 64000 * sizeof(int16_t));
             }
             else{
                 actualize_volume = true;
@@ -287,13 +289,13 @@ static void i2s_echo(void *args)
         uint8_t volume_new = get_volume();
         if(((volume_last != volume_new) || actualize_volume) && playing_new){
             volume_last = volume_new;
-            for(uint16_t i = 0; i < REC_PLAY_I2S_BUFF_SIZE; i++){
+            for(uint16_t i = 0; i < 64000; i++){
                 spkr_data[i] = (int16_t)(sig_data[i] * volume_new / VOLUME_MAX);
             }
         }
 
         // send data to speaker
-        err_ret = i2s_channel_write(tx_handle, spkr_data, spkr_samples_to_write * sizeof(int16_t), &bytes_write, 1000);
+        err_ret = i2s_channel_write(tx_handle, spkr_data, 32000 * sizeof(int16_t), &bytes_write, 10000);
         if (err_ret != ESP_OK) {
             ESP_LOGE(TAG, "Sending data to speaker error: %s", err_reason[err_ret == ESP_ERR_TIMEOUT]);
             abort();
