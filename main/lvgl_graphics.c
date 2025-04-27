@@ -6,7 +6,6 @@
 
 #define UI_TASK_STACK_SIZE 1024
 #define UI_TASK_PRIORITY 0
-#define COLOR_WHITE 255,255,255
 
 bool blinking_cursor_visible = true;
 
@@ -110,6 +109,7 @@ static void swap_color_bytes(void){
 
 
 //definitions related to graphics
+#define COLOR_WHITE                     255,255,255
 #define COLOR_BACKGROUND                10, 0, 10
 #define COLOR_MENU_INACTIVE             0,0,10
 #define COLOR_MENU_ACTIVE               255,180,0

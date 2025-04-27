@@ -45,7 +45,7 @@
 #define LVGL_TASK_PRIORITY      2
 
 #define RGB_LED_RED_MAX_INTENSITY   80
-#define RGB_LED_GREEN_MAX_INTENSITY   35
+#define RGB_LED_GREEN_MAX_INTENSITY 35
 
 static const char *TAG = "DIS_projekt";
 
